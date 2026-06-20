@@ -7,11 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Hide scrollbar for cleaner look but keep functionality */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Ensures the drawing layer doesn't mess up cursor styles */
+        .canvas-container { margin: 0 auto; }
     </style>
 </head>
 <body class="flex flex-col h-screen w-screen bg-[#f5f5f5] overflow-hidden font-sans text-gray-800">
@@ -37,30 +38,28 @@
             <i class="fa-solid fa-rotate-right cursor-not-allowed"></i>
         </div>
 
-        <div class="flex items-center space-x-6 text-gray-600 text-xs">
+        <div class="flex items-center space-x-6 text-gray-600 text-xs" id="toolbar">
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-pen-nib text-lg mb-1"></i><span class="text-[10px] font-medium">Sign</span>
             </button>
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-font text-lg mb-1"></i><span class="text-[10px] font-medium">Add text</span>
             </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-pen-to-square text-lg mb-1"></i><span class="text-[10px] font-medium">Edit text</span>
+            
+            <button id="tool-brush" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
+                <i class="fa-solid fa-paintbrush text-lg mb-1"></i><span class="text-[10px] font-medium">Brush</span>
             </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-highlighter text-lg mb-1"></i><span class="text-[10px] font-medium">Highlight</span>
-            </button>
+            
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-eraser text-lg mb-1"></i><span class="text-[10px] font-medium">Eraser</span>
             </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors text-blue-600">
+            
+            <button id="tool-pointer" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors text-blue-600">
                 <i class="fa-solid fa-arrow-pointer text-lg mb-1"></i><span class="text-[10px] font-medium">Pointer</span>
             </button>
+            
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-shapes text-lg mb-1"></i><span class="text-[10px] font-medium">Shapes</span>
-            </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-magnifying-glass text-lg mb-1"></i><span class="text-[10px] font-medium">Find</span>
             </button>
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-lock text-lg mb-1"></i><span class="text-[10px] font-medium">Protect</span>
@@ -68,9 +67,6 @@
         </div>
 
         <div class="flex items-center space-x-3">
-            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-md">
-                <i class="fa-solid fa-arrow-up-from-bracket"></i>
-            </button>
             <button class="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-black transition-colors text-sm font-medium opacity-50 cursor-not-allowed">
                 <i class="fa-solid fa-download"></i>
                 <span>Download</span>
@@ -84,8 +80,6 @@
             <div id="sidebar-header" class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50 transition-opacity duration-300">
                 <span id="page-count" class="text-sm font-semibold">0</span>
                 <div class="flex space-x-1">
-                    <button class="p-1 border border-gray-200 rounded bg-white hover:bg-gray-50"><i class="fa-solid fa-bars text-sm"></i></button>
-                    <button class="p-1 border border-gray-200 rounded bg-white hover:bg-gray-50"><i class="fa-regular fa-copy text-sm"></i></button>
                     <button class="p-1 border border-gray-200 rounded bg-black text-white hover:bg-gray-800"><i class="fa-solid fa-plus text-sm"></i></button>
                 </div>
             </div>
@@ -107,22 +101,18 @@
         </main>
 
         <aside class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col items-center text-center justify-center opacity-50">
-            <div class="w-48 h-40 bg-gray-100 rounded-xl flex items-center justify-center mb-6 relative grayscale">
-                <div class="absolute w-16 h-16 bg-white shadow-md rounded-md -ml-8 -mt-4 transform -rotate-6"></div>
-                <div class="absolute w-16 h-16 bg-white shadow-md rounded-md ml-4 -mt-2"></div>
-                <div class="absolute w-16 h-16 bg-gray-400 shadow-lg rounded-md ml-12 mt-6 flex items-center justify-center z-10">
-                    <i class="fa-solid fa-pen text-white text-2xl"></i>
-                </div>
-            </div>
             <p class="text-xs text-gray-400">Upload a document to use tools</p>
         </aside>
 
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // UI Elements
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-upload');
         const mainStage = document.getElementById('main-stage');
@@ -130,22 +120,25 @@
         const thumbnailContainer = document.getElementById('thumbnail-container');
         const pageCountSpan = document.getElementById('page-count');
         const sidebarHeader = document.getElementById('sidebar-header');
+        
+        // Tool Buttons
+        const btnPointer = document.getElementById('tool-pointer');
+        const btnBrush = document.getElementById('tool-brush');
+
+        // Global array to hold the Fabric.js transparent overlays for each page
+        let fabricCanvases = [];
 
         dropZone.addEventListener('click', () => fileInput.click());
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            
-            if (!file || file.type !== 'application/pdf') {
-                alert('Please upload a valid PDF file.');
-                return;
-            }
+            if (!file || file.type !== 'application/pdf') return;
             
             headerFilename.textContent = file.name;
             headerFilename.classList.remove('text-gray-400', 'italic');
             headerFilename.classList.add('text-white');
             
-            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Rendering pages...</p>';
+            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Building editor...</p>';
 
             const reader = new FileReader();
             reader.onload = async function(ev) {
@@ -154,56 +147,98 @@
                 try {
                     const pdf = await pdfjsLib.getDocument(typedarray).promise;
                     
-                    // Clear out the UI
                     mainStage.innerHTML = '';
                     thumbnailContainer.innerHTML = '';
                     thumbnailContainer.classList.remove('justify-center', 'items-center', 'text-gray-400');
                     thumbnailContainer.classList.add('items-center');
-                    
-                    // Update Page Count
                     sidebarHeader.classList.remove('opacity-50');
                     pageCountSpan.textContent = pdf.numPages;
 
-                    // Loop through every page sequentially
+                    fabricCanvases = []; // Reset array for new document
+
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const page = await pdf.getPage(pageNum);
                         
-                        // --- 1. RENDER THUMBNAIL (Low Res) ---
+                        // --- THUMBNAILS ---
                         const thumbViewport = page.getViewport({ scale: 0.3 });
                         const thumbCanvas = document.createElement('canvas');
-                        const thumbCtx = thumbCanvas.getContext('2d');
                         thumbCanvas.height = thumbViewport.height;
                         thumbCanvas.width = thumbViewport.width;
-                        thumbCanvas.className = 'w-3/4 bg-white shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer';
+                        thumbCanvas.className = 'w-3/4 bg-white shadow-sm border border-gray-200';
+                        await page.render({ canvasContext: thumbCanvas.getContext('2d'), viewport: thumbViewport }).promise;
                         
-                        await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise;
-                        
-                        // Wrap thumbnail in a div with page number
                         const thumbWrapper = document.createElement('div');
                         thumbWrapper.className = 'w-full flex flex-col items-center mb-4';
                         thumbWrapper.innerHTML = `<span class="text-[10px] text-gray-400 mb-1 font-medium">Page ${pageNum}</span>`;
                         thumbWrapper.appendChild(thumbCanvas);
                         thumbnailContainer.appendChild(thumbWrapper);
 
-                        // --- 2. RENDER MAIN PAGE (High Res) ---
+                        // --- MAIN STAGE (The Stack) ---
                         const mainViewport = page.getViewport({ scale: 1.5 });
-                        const mainCanvas = document.createElement('canvas');
-                        const mainCtx = mainCanvas.getContext('2d');
-                        mainCanvas.height = mainViewport.height;
-                        mainCanvas.width = mainViewport.width;
-                        mainCanvas.className = 'shadow-xl border border-gray-300 max-w-full h-auto mb-8 bg-white'; 
                         
-                        await page.render({ canvasContext: mainCtx, viewport: mainViewport }).promise;
-                        mainStage.appendChild(mainCanvas);
+                        // 1. Create a wrapper box exactly the size of the PDF page
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'relative mb-8 shadow-xl border border-gray-300 bg-white';
+                        pageContainer.style.width = mainViewport.width + 'px';
+                        pageContainer.style.height = mainViewport.height + 'px';
+
+                        // 2. The Bottom Layer: The actual PDF render
+                        const pdfCanvas = document.createElement('canvas');
+                        pdfCanvas.height = mainViewport.height;
+                        pdfCanvas.width = mainViewport.width;
+                        pdfCanvas.className = 'absolute top-0 left-0 z-0'; 
+                        pageContainer.appendChild(pdfCanvas);
+                        await page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: mainViewport }).promise;
+
+                        // 3. The Top Layer: The Fabric.js invisible drawing board
+                        const fabricCanvasEl = document.createElement('canvas');
+                        fabricCanvasEl.id = `fabric-page-${pageNum}`;
+                        pageContainer.appendChild(fabricCanvasEl);
+
+                        mainStage.appendChild(pageContainer);
+
+                        // 4. Initialize Fabric on the top layer
+                        const fCanvas = new fabric.Canvas(`fabric-page-${pageNum}`, {
+                            width: mainViewport.width,
+                            height: mainViewport.height,
+                            isDrawingMode: false // Defaults to pointer mode
+                        });
+                        
+                        // Set up brush settings
+                        fCanvas.freeDrawingBrush.color = '#ef4444'; // Red ink
+                        fCanvas.freeDrawingBrush.width = 4;
+                        
+                        fabricCanvases.push(fCanvas);
                     }
                 } catch (err) {
-                    alert("Error loading PDF: " + err.message);
-                    mainStage.innerHTML = '<p class="text-red-500">Failed to render document.</p>';
+                    alert("Error: " + err.message);
                 }
             };
-            
             reader.readAsArrayBuffer(file);
         });
+
+        // --- TOOLBAR LOGIC ---
+        
+        btnPointer.addEventListener('click', () => {
+            btnPointer.classList.add('text-blue-600');
+            btnBrush.classList.remove('text-blue-600');
+            
+            // Turn off drawing mode on all pages
+            fabricCanvases.forEach(canvas => {
+                canvas.isDrawingMode = false;
+            });
+        });
+
+        btnBrush.addEventListener('click', () => {
+            btnBrush.classList.add('text-blue-600');
+            btnPointer.classList.remove('text-blue-600');
+            
+            // Turn on drawing mode on all pages
+            fabricCanvases.forEach(canvas => {
+                canvas.isDrawingMode = true;
+            });
+        });
+
     </script>
 </body>
 </html>
