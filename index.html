@@ -6,6 +6,13 @@
     <title>PDFE - Personal Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Hide scrollbar for cleaner look but keep functionality */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
 <body class="flex flex-col h-screen w-screen bg-[#f5f5f5] overflow-hidden font-sans text-gray-800">
 
@@ -73,24 +80,24 @@
 
     <div class="flex flex-1 overflow-hidden">
         
-        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
-            <div class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50">
-                <span class="text-sm font-semibold">0</span>
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+            <div id="sidebar-header" class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50 transition-opacity duration-300">
+                <span id="page-count" class="text-sm font-semibold">0</span>
                 <div class="flex space-x-1">
-                    <button class="p-1 border border-gray-200 rounded bg-white"><i class="fa-solid fa-bars text-sm"></i></button>
-                    <button class="p-1 border border-gray-200 rounded bg-white"><i class="fa-regular fa-copy text-sm"></i></button>
-                    <button class="p-1 border border-gray-200 rounded bg-black text-white"><i class="fa-solid fa-plus text-sm"></i></button>
+                    <button class="p-1 border border-gray-200 rounded bg-white hover:bg-gray-50"><i class="fa-solid fa-bars text-sm"></i></button>
+                    <button class="p-1 border border-gray-200 rounded bg-white hover:bg-gray-50"><i class="fa-regular fa-copy text-sm"></i></button>
+                    <button class="p-1 border border-gray-200 rounded bg-black text-white hover:bg-gray-800"><i class="fa-solid fa-plus text-sm"></i></button>
                 </div>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-4 bg-[#fcfcfc] flex items-center justify-center text-gray-400 text-sm">
+            <div id="thumbnail-container" class="flex-1 overflow-y-auto p-4 bg-[#fcfcfc] flex flex-col items-center justify-center text-gray-400 text-sm gap-4">
                 No pages to display
             </div>
         </aside>
 
-        <main id="main-stage" class="flex-1 overflow-auto p-8 flex justify-center items-center bg-[#eaeaea]">
+        <main id="main-stage" class="flex-1 overflow-y-auto p-8 flex flex-col items-center bg-[#eaeaea] relative">
             
-            <div id="drop-zone" class="w-full max-w-2xl bg-[#fafafa] border-2 border-dashed border-gray-300 rounded-xl aspect-[16/9] flex flex-col items-center justify-center text-gray-400 hover:bg-white hover:border-blue-400 hover:text-blue-500 transition-all cursor-pointer shadow-sm">
+            <div id="drop-zone" class="w-full max-w-2xl bg-[#fafafa] border-2 border-dashed border-gray-300 rounded-xl aspect-[16/9] flex flex-col items-center justify-center text-gray-400 hover:bg-white hover:border-blue-400 hover:text-blue-500 transition-all cursor-pointer shadow-sm mt-20">
                 <i class="fa-solid fa-cloud-arrow-up text-6xl mb-4"></i>
                 <h2 class="text-2xl font-medium text-gray-700 mb-2">Drag and drop your PDF</h2>
                 <p class="text-sm">or click to browse your files</p>
@@ -114,77 +121,87 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // Tell PDF.js where to find its worker file
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-upload');
         const mainStage = document.getElementById('main-stage');
         const headerFilename = document.getElementById('header-filename');
+        const thumbnailContainer = document.getElementById('thumbnail-container');
+        const pageCountSpan = document.getElementById('page-count');
+        const sidebarHeader = document.getElementById('sidebar-header');
 
-        // When the drop zone is clicked, trigger the hidden file input
         dropZone.addEventListener('click', () => fileInput.click());
 
-        // When a file is selected...
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             
-            // Check if it's actually a PDF
             if (!file || file.type !== 'application/pdf') {
                 alert('Please upload a valid PDF file.');
                 return;
             }
             
-            // Update the header with the file name
             headerFilename.textContent = file.name;
             headerFilename.classList.remove('text-gray-400', 'italic');
             headerFilename.classList.add('text-white');
             
-            // Change drop zone to say loading
-            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Rendering PDF...</p>';
+            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Rendering pages...</p>';
 
-            // Read the file from the user's computer
             const reader = new FileReader();
-            reader.onload = function(ev) {
+            reader.onload = async function(ev) {
                 const typedarray = new Uint8Array(ev.target.result);
                 
-                // Pass the raw data to PDF.js
-                pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                try {
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
                     
-                    // Fetch the first page of the PDF
-                    pdf.getPage(1).then(page => {
-                        const scale = 1.5; // Controls the resolution/size
-                        const viewport = page.getViewport({scale: scale});
+                    // Clear out the UI
+                    mainStage.innerHTML = '';
+                    thumbnailContainer.innerHTML = '';
+                    thumbnailContainer.classList.remove('justify-center', 'items-center', 'text-gray-400');
+                    thumbnailContainer.classList.add('items-center');
+                    
+                    // Update Page Count
+                    sidebarHeader.classList.remove('opacity-50');
+                    pageCountSpan.textContent = pdf.numPages;
+
+                    // Loop through every page sequentially
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
                         
-                        // Create an HTML5 Canvas to draw the PDF on
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        canvas.className = 'shadow-2xl border border-gray-300 max-w-full h-auto mt-8 mb-8'; 
+                        // --- 1. RENDER THUMBNAIL (Low Res) ---
+                        const thumbViewport = page.getViewport({ scale: 0.3 });
+                        const thumbCanvas = document.createElement('canvas');
+                        const thumbCtx = thumbCanvas.getContext('2d');
+                        thumbCanvas.height = thumbViewport.height;
+                        thumbCanvas.width = thumbViewport.width;
+                        thumbCanvas.className = 'w-3/4 bg-white shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer';
                         
-                        // Render the page onto the canvas
-                        const renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
+                        await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise;
                         
-                        page.render(renderContext).promise.then(() => {
-                            // Clear the main stage (remove the drag-and-drop box)
-                            mainStage.innerHTML = '';
-                            // Make it scrollable instead of centered vertically
-                            mainStage.classList.remove('items-center'); 
-                            mainStage.classList.add('items-start');
-                            // Drop the rendered PDF onto the screen
-                            mainStage.appendChild(canvas);
-                        });
-                    });
-                }).catch(err => {
+                        // Wrap thumbnail in a div with page number
+                        const thumbWrapper = document.createElement('div');
+                        thumbWrapper.className = 'w-full flex flex-col items-center mb-4';
+                        thumbWrapper.innerHTML = `<span class="text-[10px] text-gray-400 mb-1 font-medium">Page ${pageNum}</span>`;
+                        thumbWrapper.appendChild(thumbCanvas);
+                        thumbnailContainer.appendChild(thumbWrapper);
+
+                        // --- 2. RENDER MAIN PAGE (High Res) ---
+                        const mainViewport = page.getViewport({ scale: 1.5 });
+                        const mainCanvas = document.createElement('canvas');
+                        const mainCtx = mainCanvas.getContext('2d');
+                        mainCanvas.height = mainViewport.height;
+                        mainCanvas.width = mainViewport.width;
+                        mainCanvas.className = 'shadow-xl border border-gray-300 max-w-full h-auto mb-8 bg-white'; 
+                        
+                        await page.render({ canvasContext: mainCtx, viewport: mainViewport }).promise;
+                        mainStage.appendChild(mainCanvas);
+                    }
+                } catch (err) {
                     alert("Error loading PDF: " + err.message);
-                });
+                    mainStage.innerHTML = '<p class="text-red-500">Failed to render document.</p>';
+                }
             };
             
-            // Start reading the file
             reader.readAsArrayBuffer(file);
         });
     </script>
