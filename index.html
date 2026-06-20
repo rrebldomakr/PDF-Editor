@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDFE - Personal Editor</title>
+    <title>PDFE - Production Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,11 +11,10 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        /* Ensures the drawing layer doesn't mess up cursor styles */
-        .canvas-container { margin: 0 auto; }
+        .canvas-container { margin: 0 auto; position: relative; }
     </style>
 </head>
-<body class="flex flex-col h-screen w-screen bg-[#f5f5f5] overflow-hidden font-sans text-gray-800">
+<body class="flex flex-col h-screen w-screen bg-[#f5f5f5] overflow-hidden font-sans text-gray-800 select-none">
 
     <header class="flex items-center justify-between px-4 py-3 bg-[#1a1a1a] text-white">
         <div class="flex items-center space-x-2">
@@ -39,35 +38,22 @@
         </div>
 
         <div class="flex items-center space-x-6 text-gray-600 text-xs" id="toolbar">
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-pen-nib text-lg mb-1"></i><span class="text-[10px] font-medium">Sign</span>
-            </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-font text-lg mb-1"></i><span class="text-[10px] font-medium">Add text</span>
-            </button>
-            
-            <button id="tool-brush" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-paintbrush text-lg mb-1"></i><span class="text-[10px] font-medium">Brush</span>
-            </button>
-            
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-eraser text-lg mb-1"></i><span class="text-[10px] font-medium">Eraser</span>
-            </button>
-            
             <button id="tool-pointer" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors text-blue-600">
                 <i class="fa-solid fa-arrow-pointer text-lg mb-1"></i><span class="text-[10px] font-medium">Pointer</span>
             </button>
-            
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-shapes text-lg mb-1"></i><span class="text-[10px] font-medium">Shapes</span>
+            <button id="tool-text" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
+                <i class="fa-solid fa-font text-lg mb-1"></i><span class="text-[10px] font-medium">Add Text</span>
             </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
-                <i class="fa-solid fa-lock text-lg mb-1"></i><span class="text-[10px] font-medium">Protect</span>
+            <button id="tool-brush" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
+                <i class="fa-solid fa-paintbrush text-lg mb-1"></i><span class="text-[10px] font-medium">Brush</span>
+            </button>
+            <button id="tool-eraser" class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
+                <i class="fa-solid fa-eraser text-lg mb-1"></i><span class="text-[10px] font-medium">Eraser</span>
             </button>
         </div>
 
         <div class="flex items-center space-x-3">
-            <button class="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-black transition-colors text-sm font-medium opacity-50 cursor-not-allowed">
+            <button id="btn-download" class="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-black transition-colors text-sm font-medium opacity-50 cursor-not-allowed">
                 <i class="fa-solid fa-download"></i>
                 <span>Download</span>
             </button>
@@ -77,31 +63,65 @@
     <div class="flex flex-1 overflow-hidden">
         
         <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-            <div id="sidebar-header" class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50 transition-opacity duration-300">
+            <div id="sidebar-header" class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50">
                 <span id="page-count" class="text-sm font-semibold">0</span>
-                <div class="flex space-x-1">
-                    <button class="p-1 border border-gray-200 rounded bg-black text-white hover:bg-gray-800"><i class="fa-solid fa-plus text-sm"></i></button>
-                </div>
+                <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Pages</span>
             </div>
-            
             <div id="thumbnail-container" class="flex-1 overflow-y-auto p-4 bg-[#fcfcfc] flex flex-col items-center justify-center text-gray-400 text-sm gap-4">
-                No pages to display
+                No pages loaded
             </div>
         </aside>
 
         <main id="main-stage" class="flex-1 overflow-y-auto p-8 flex flex-col items-center bg-[#eaeaea] relative">
-            
             <div id="drop-zone" class="w-full max-w-2xl bg-[#fafafa] border-2 border-dashed border-gray-300 rounded-xl aspect-[16/9] flex flex-col items-center justify-center text-gray-400 hover:bg-white hover:border-blue-400 hover:text-blue-500 transition-all cursor-pointer shadow-sm mt-20">
                 <i class="fa-solid fa-cloud-arrow-up text-6xl mb-4"></i>
                 <h2 class="text-2xl font-medium text-gray-700 mb-2">Drag and drop your PDF</h2>
                 <p class="text-sm">or click to browse your files</p>
                 <input type="file" id="file-upload" accept="application/pdf" class="hidden">
             </div>
-
         </main>
 
-        <aside class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col items-center text-center justify-center opacity-50">
-            <p class="text-xs text-gray-400">Upload a document to use tools</p>
+        <aside id="right-sidebar" class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col z-10">
+            <div id="sidebar-default-state" class="flex flex-col items-center text-center justify-center h-full text-gray-400">
+                <i class="fa-solid fa-sliders text-3xl mb-3"></i>
+                <p class="text-xs">Select an element or tool to adjust properties</p>
+            </div>
+            
+            <div id="sidebar-active-state" class="hidden flex flex-col space-y-6 w-full">
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-3">Format Options</h3>
+                
+                <div class="flex flex-col space-y-2">
+                    <label class="text-xs font-semibold text-gray-500">Font Family</label>
+                    <select id="prop-font-family" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="sans-serif">Sans-Serif (Standard)</option>
+                        <option value="serif">Serif (Formal)</option>
+                        <option value="monospace">Monospace (Code)</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Arial">Arial</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col space-y-2">
+                        <label class="text-xs font-semibold text-gray-500">Size (px)</label>
+                        <input type="number" id="prop-font-size" value="16" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <label class="text-xs font-semibold text-gray-500">Text Color</label>
+                        <div class="flex items-center space-x-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+                            <input type="color" id="prop-color" value="#000000" class="w-10 h-8 border-0 bg-transparent cursor-pointer rounded">
+                            <span id="color-hex" class="text-xs font-mono uppercase text-gray-600">#000000</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-gray-100">
+                    <p class="text-[11px] text-blue-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Smart-detection is active. Clicking close to existing text will clone its parameters.
+                    </p>
+                </div>
+            </div>
         </aside>
 
     </div>
@@ -112,7 +132,6 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // UI Elements
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-upload');
         const mainStage = document.getElementById('main-stage');
@@ -120,13 +139,27 @@
         const thumbnailContainer = document.getElementById('thumbnail-container');
         const pageCountSpan = document.getElementById('page-count');
         const sidebarHeader = document.getElementById('sidebar-header');
-        
-        // Tool Buttons
-        const btnPointer = document.getElementById('tool-pointer');
-        const btnBrush = document.getElementById('tool-brush');
+        const btnDownload = document.getElementById('btn-download');
 
-        // Global array to hold the Fabric.js transparent overlays for each page
+        // Properties Sidebar DOM elements
+        const sidebarDefault = document.getElementById('sidebar-default-state');
+        const sidebarActive = document.getElementById('sidebar-active-state');
+        const propFontFamily = document.getElementById('prop-font-family');
+        const propFontSize = document.getElementById('prop-font-size');
+        const propColor = document.getElementById('prop-color');
+        const colorHex = document.getElementById('color-hex');
+        
+        // Toolbar State Control
+        const buttons = {
+            pointer: document.getElementById('tool-pointer'),
+            text: document.getElementById('tool-text'),
+            brush: document.getElementById('tool-brush'),
+            eraser: document.getElementById('tool-eraser')
+        };
+
+        let currentMode = 'pointer'; 
         let fabricCanvases = [];
+        let pdfTextLayers = []; // Caches layout metadata per page
 
         dropZone.addEventListener('click', () => fileInput.click());
 
@@ -137,8 +170,9 @@
             headerFilename.textContent = file.name;
             headerFilename.classList.remove('text-gray-400', 'italic');
             headerFilename.classList.add('text-white');
+            btnDownload.classList.remove('opacity-50', 'cursor-not-allowed');
             
-            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Building editor...</p>';
+            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p class="text-sm font-medium">Parsing text coordinates & font matrices...</p>';
 
             const reader = new FileReader();
             reader.onload = async function(ev) {
@@ -150,21 +184,21 @@
                     mainStage.innerHTML = '';
                     thumbnailContainer.innerHTML = '';
                     thumbnailContainer.classList.remove('justify-center', 'items-center', 'text-gray-400');
-                    thumbnailContainer.classList.add('items-center');
                     sidebarHeader.classList.remove('opacity-50');
                     pageCountSpan.textContent = pdf.numPages;
 
-                    fabricCanvases = []; // Reset array for new document
+                    fabricCanvases = [];
+                    pdfTextLayers = [];
 
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const page = await pdf.getPage(pageNum);
                         
-                        // --- THUMBNAILS ---
-                        const thumbViewport = page.getViewport({ scale: 0.3 });
+                        // --- THUMBNAIL RENDER ---
+                        const thumbViewport = page.getViewport({ scale: 0.25 });
                         const thumbCanvas = document.createElement('canvas');
                         thumbCanvas.height = thumbViewport.height;
                         thumbCanvas.width = thumbViewport.width;
-                        thumbCanvas.className = 'w-3/4 bg-white shadow-sm border border-gray-200';
+                        thumbCanvas.className = 'w-3/4 bg-white shadow-sm border border-gray-200 rounded';
                         await page.render({ canvasContext: thumbCanvas.getContext('2d'), viewport: thumbViewport }).promise;
                         
                         const thumbWrapper = document.createElement('div');
@@ -173,16 +207,18 @@
                         thumbWrapper.appendChild(thumbCanvas);
                         thumbnailContainer.appendChild(thumbWrapper);
 
-                        // --- MAIN STAGE (The Stack) ---
+                        // --- CORE WORKSPACE STACK ---
                         const mainViewport = page.getViewport({ scale: 1.5 });
                         
-                        // 1. Create a wrapper box exactly the size of the PDF page
+                        // Cache text extraction data for matching logic
+                        const textContent = await page.getTextContent();
+                        pdfTextLayers.push({ page: pageNum, content: textContent.items, viewport: mainViewport });
+
                         const pageContainer = document.createElement('div');
-                        pageContainer.className = 'relative mb-8 shadow-xl border border-gray-300 bg-white';
+                        pageContainer.className = 'relative mb-10 shadow-2xl border border-gray-300 bg-white';
                         pageContainer.style.width = mainViewport.width + 'px';
                         pageContainer.style.height = mainViewport.height + 'px';
 
-                        // 2. The Bottom Layer: The actual PDF render
                         const pdfCanvas = document.createElement('canvas');
                         pdfCanvas.height = mainViewport.height;
                         pdfCanvas.width = mainViewport.width;
@@ -190,26 +226,26 @@
                         pageContainer.appendChild(pdfCanvas);
                         await page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: mainViewport }).promise;
 
-                        // 3. The Top Layer: The Fabric.js invisible drawing board
                         const fabricCanvasEl = document.createElement('canvas');
                         fabricCanvasEl.id = `fabric-page-${pageNum}`;
                         pageContainer.appendChild(fabricCanvasEl);
-
                         mainStage.appendChild(pageContainer);
 
-                        // 4. Initialize Fabric on the top layer
                         const fCanvas = new fabric.Canvas(`fabric-page-${pageNum}`, {
                             width: mainViewport.width,
                             height: mainViewport.height,
-                            isDrawingMode: false // Defaults to pointer mode
+                            isDrawingMode: false,
+                            selection: true
                         });
                         
-                        // Set up brush settings
-                        fCanvas.freeDrawingBrush.color = '#ef4444'; // Red ink
-                        fCanvas.freeDrawingBrush.width = 4;
+                        fCanvas.freeDrawingBrush.color = '#ef4444';
+                        fCanvas.freeDrawingBrush.width = 3;
                         
+                        // Attach Event Handlers for UI interaction
+                        setupCanvasEvents(fCanvas, pageNum);
                         fabricCanvases.push(fCanvas);
                     }
+                    switchMode('pointer');
                 } catch (err) {
                     alert("Error: " + err.message);
                 }
@@ -217,28 +253,184 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // --- TOOLBAR LOGIC ---
+        // --- CONTEXT-AWARE HOOKS ---
+        function setupCanvasEvents(fCanvas, pageNum) {
+            
+            // Handles item selection adjustments in properties panel
+            fCanvas.on('selection:created', (e) => updatePropertiesPanel(e.selected[0]));
+            fCanvas.on('selection:updated', (e) => updatePropertiesPanel(e.selected[0]));
+            fCanvas.on('selection:cleared', () => handleSidebarVisibility());
+
+            fCanvas.on('mouse:down', function(options) {
+                if (currentMode !== 'text') return;
+                if (options.target) return; // Clicked an existing object, abort creation
+
+                const pointer = fCanvas.getPointer(options.e);
+                let clickX = pointer.x;
+                let clickY = pointer.y;
+
+                // Default parameters
+                let detectedSize = parseInt(propFontSize.value);
+                let detectedFont = propFontFamily.value;
+                
+                // Scan text layer to find closest geometric string element
+                const layer = pdfTextLayers[pageNum - 1];
+                let closestItem = null;
+                let minDistance = 40; // Pixel scan radius threshold
+
+                layer.content.forEach(item => {
+                    // Convert PDF internal matrix configurations to canvas coordinates
+                    const tx = pdfjsLib.Util.transform(layer.viewport.transform, item.transform);
+                    const itemX = tx[4];
+                    const itemY = tx[5] - (item.height * 1.5); // Baseline adjustment offset
+
+                    const dx = clickX - itemX;
+                    const dy = clickY - itemY;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestItem = item;
+                    }
+                });
+
+                // If found close to real text, inherit typography states immediately
+                if (closestItem) {
+                    detectedSize = Math.round(closestItem.transform[0] * 1.5); // Convert font scaling factor
+                    if (closestItem.fontName.toLowerCase().includes('serif')) {
+                        detectedFont = 'serif';
+                    } else if (closestItem.fontName.toLowerCase().includes('mono')) {
+                        detectedFont = 'monospace';
+                    } else {
+                        detectedFont = 'sans-serif';
+                    }
+                    
+                    // Update controls to visually reflect matched properties
+                    propFontSize.value = detectedSize;
+                    propFontFamily.value = detectedFont;
+                }
+
+                // Instantiate fully editable Text Object directly over layers
+                const text = new fabric.IText('Type text here', {
+                    left: clickX,
+                    top: clickY - (detectedSize / 2),
+                    fontFamily: detectedFont,
+                    fontSize: detectedSize,
+                    fill: propColor.value,
+                    editable: true
+                });
+
+                fCanvas.add(text);
+                fCanvas.setActiveObject(text);
+                text.enterEditing();
+                text.selectAll();
+                switchMode('pointer'); // Snap back cleanly to standard mouse interactions
+            });
+        }
+
+        // --- PROPERTIES PANEL MUTATION ENGINE ---
+        function updatePropertiesPanel(activeObject) {
+            if (!activeObject || activeObject.type !== 'i-text') return;
+            
+            sidebarDefault.classList.add('hidden');
+            sidebarActive.classList.remove('hidden');
+
+            propFontFamily.value = activeObject.fontFamily;
+            propFontSize.value = activeObject.fontSize;
+            propColor.value = activeObject.fill;
+            colorHex.textContent = activeObject.fill;
+        }
+
+        function handleSidebarVisibility() {
+            if (currentMode === 'text') {
+                sidebarDefault.classList.add('hidden');
+                sidebarActive.classList.remove('hidden');
+            } else {
+                sidebarActive.classList.add('hidden');
+                sidebarDefault.classList.remove('hidden');
+            }
+        }
+
+        // Property Mutation Listeners
+        propFontFamily.addEventListener('change', (e) => {
+            const active = getActiveCanvasObject();
+            if (active) { active.set('fontFamily', e.target.value); renderAllCanvases(); }
+        });
+
+        propFontSize.addEventListener('input', (e) => {
+            const active = getActiveCanvasObject();
+            if (active) { active.set('fontSize', parseInt(e.target.value) || 12); renderAllCanvases(); }
+        });
+
+        propColor.addEventListener('input', (e) => {
+            colorHex.textContent = e.target.value;
+            const active = getActiveCanvasObject();
+            if (active) { active.set('fill', e.target.value); renderAllCanvases(); }
+        });
+
+        function getActiveCanvasObject() {
+            for (let i = 0; i < fabricCanvases.length; i++) {
+                const active = fabricCanvases[i].getActiveObject();
+                if (active) return active;
+            }
+            return null;
+        }
+
+        function renderAllCanvases() {
+            fabricCanvases.forEach(c => c.renderAll());
+        }
+
+        // --- TOOLBAR ENGINE CONTROLLER ---
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Toggle highlight styles across DOM tree elements
+            Object.keys(buttons).forEach(k => {
+                if (k === mode) {
+                    buttons[k].classList.add('text-blue-600', 'bg-blue-50');
+                } else {
+                    buttons[k].classList.remove('text-blue-600', 'bg-blue-50');
+                }
+            });
+
+            handleSidebarVisibility();
+
+            fabricCanvases.forEach(canvas => {
+                canvas.isDrawingMode = (mode === 'brush');
+                canvas.discardActiveObject().renderAll();
+                
+                // Fine-tune interaction controls based on active tools
+                if (mode === 'pointer') {
+                    canvas.getObjects().forEach(obj => obj.set('selectable', true));
+                } else {
+                    canvas.getObjects().forEach(obj => obj.set('selectable', false));
+                }
+            });
+        }
+
+        buttons.pointer.addEventListener('click', () => switchMode('pointer'));
+        buttons.text.addEventListener('click', () => switchMode('text'));
+        buttons.brush.addEventListener('click', () => switchMode('brush'));
         
-        btnPointer.addEventListener('click', () => {
-            btnPointer.classList.add('text-blue-600');
-            btnBrush.classList.remove('text-blue-600');
-            
-            // Turn off drawing mode on all pages
+        buttons.eraser.addEventListener('click', () => {
+            switchMode('pointer');
             fabricCanvases.forEach(canvas => {
-                canvas.isDrawingMode = false;
+                const active = canvas.getActiveObject();
+                if (active) canvas.remove(active);
             });
         });
 
-        btnBrush.addEventListener('click', () => {
-            btnBrush.classList.add('text-blue-600');
-            btnPointer.classList.remove('text-blue-600');
-            
-            // Turn on drawing mode on all pages
-            fabricCanvases.forEach(canvas => {
-                canvas.isDrawingMode = true;
-            });
+        // Key Listener to catch standard Delete actions natively
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                fabricCanvases.forEach(canvas => {
+                    const active = canvas.getActiveObject();
+                    if (active && !active.isEditing) {
+                        canvas.remove(active);
+                    }
+                });
+            }
         });
-
     </script>
 </body>
 </html>
