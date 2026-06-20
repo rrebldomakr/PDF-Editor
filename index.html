@@ -15,7 +15,7 @@
             <span class="font-bold text-lg tracking-wider">PDF<span class="text-sm">E</span></span>
         </div>
         
-        <div class="text-sm font-medium tracking-wide text-gray-400 italic">
+        <div id="header-filename" class="text-sm font-medium tracking-wide text-gray-400 italic">
             No document loaded
         </div>
         
@@ -55,4 +55,138 @@
             <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
                 <i class="fa-solid fa-magnifying-glass text-lg mb-1"></i><span class="text-[10px] font-medium">Find</span>
             </button>
-            <button class="flex flex-col items-center justify-center p-2 rounded hover
+            <button class="flex flex-col items-center justify-center p-2 rounded hover:bg-gray-100 transition-colors">
+                <i class="fa-solid fa-lock text-lg mb-1"></i><span class="text-[10px] font-medium">Protect</span>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-md">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            </button>
+            <button class="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-black transition-colors text-sm font-medium opacity-50 cursor-not-allowed">
+                <i class="fa-solid fa-download"></i>
+                <span>Download</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <div class="flex items-center justify-between p-3 border-b border-gray-100 opacity-50">
+                <span class="text-sm font-semibold">0</span>
+                <div class="flex space-x-1">
+                    <button class="p-1 border border-gray-200 rounded bg-white"><i class="fa-solid fa-bars text-sm"></i></button>
+                    <button class="p-1 border border-gray-200 rounded bg-white"><i class="fa-regular fa-copy text-sm"></i></button>
+                    <button class="p-1 border border-gray-200 rounded bg-black text-white"><i class="fa-solid fa-plus text-sm"></i></button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4 bg-[#fcfcfc] flex items-center justify-center text-gray-400 text-sm">
+                No pages to display
+            </div>
+        </aside>
+
+        <main id="main-stage" class="flex-1 overflow-auto p-8 flex justify-center items-center bg-[#eaeaea]">
+            
+            <div id="drop-zone" class="w-full max-w-2xl bg-[#fafafa] border-2 border-dashed border-gray-300 rounded-xl aspect-[16/9] flex flex-col items-center justify-center text-gray-400 hover:bg-white hover:border-blue-400 hover:text-blue-500 transition-all cursor-pointer shadow-sm">
+                <i class="fa-solid fa-cloud-arrow-up text-6xl mb-4"></i>
+                <h2 class="text-2xl font-medium text-gray-700 mb-2">Drag and drop your PDF</h2>
+                <p class="text-sm">or click to browse your files</p>
+                <input type="file" id="file-upload" accept="application/pdf" class="hidden">
+            </div>
+
+        </main>
+
+        <aside class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col items-center text-center justify-center opacity-50">
+            <div class="w-48 h-40 bg-gray-100 rounded-xl flex items-center justify-center mb-6 relative grayscale">
+                <div class="absolute w-16 h-16 bg-white shadow-md rounded-md -ml-8 -mt-4 transform -rotate-6"></div>
+                <div class="absolute w-16 h-16 bg-white shadow-md rounded-md ml-4 -mt-2"></div>
+                <div class="absolute w-16 h-16 bg-gray-400 shadow-lg rounded-md ml-12 mt-6 flex items-center justify-center z-10">
+                    <i class="fa-solid fa-pen text-white text-2xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-400">Upload a document to use tools</p>
+        </aside>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Tell PDF.js where to find its worker file
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-upload');
+        const mainStage = document.getElementById('main-stage');
+        const headerFilename = document.getElementById('header-filename');
+
+        // When the drop zone is clicked, trigger the hidden file input
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // When a file is selected...
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            // Check if it's actually a PDF
+            if (!file || file.type !== 'application/pdf') {
+                alert('Please upload a valid PDF file.');
+                return;
+            }
+            
+            // Update the header with the file name
+            headerFilename.textContent = file.name;
+            headerFilename.classList.remove('text-gray-400', 'italic');
+            headerFilename.classList.add('text-white');
+            
+            // Change drop zone to say loading
+            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p>Rendering PDF...</p>';
+
+            // Read the file from the user's computer
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const typedarray = new Uint8Array(ev.target.result);
+                
+                // Pass the raw data to PDF.js
+                pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                    
+                    // Fetch the first page of the PDF
+                    pdf.getPage(1).then(page => {
+                        const scale = 1.5; // Controls the resolution/size
+                        const viewport = page.getViewport({scale: scale});
+                        
+                        // Create an HTML5 Canvas to draw the PDF on
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        canvas.className = 'shadow-2xl border border-gray-300 max-w-full h-auto mt-8 mb-8'; 
+                        
+                        // Render the page onto the canvas
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        
+                        page.render(renderContext).promise.then(() => {
+                            // Clear the main stage (remove the drag-and-drop box)
+                            mainStage.innerHTML = '';
+                            // Make it scrollable instead of centered vertically
+                            mainStage.classList.remove('items-center'); 
+                            mainStage.classList.add('items-start');
+                            // Drop the rendered PDF onto the screen
+                            mainStage.appendChild(canvas);
+                        });
+                    });
+                }).catch(err => {
+                    alert("Error loading PDF: " + err.message);
+                });
+            };
+            
+            // Start reading the file
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
